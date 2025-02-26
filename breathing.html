@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diaphragmatic Breathing</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000000;
+            overflow: hidden;
+        }
+        #bubble {
+            width: 100px;
+            height: 100px;
+            background-color: #A9A9A9;
+            border-radius: 50%;
+            transition: all 0.1s linear;
+            position: absolute;
+        }
+        #timer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="bubble"></div>
+    <div id="timer">00:00 / 05:00</div>
+    <script>
+        const bubble = document.getElementById('bubble');
+        const timer = document.getElementById('timer');
+        const INHALE_TIME = 4;
+        const HOLD_TIME = 2;
+        const EXHALE_TIME = 7;
+        const CYCLE_TIME = INHALE_TIME + HOLD_TIME + EXHALE_TIME;
+        const TOTAL_TIME = 5 * 60;
+        const MIN_SIZE = 100;
+        const MAX_SIZE = 400;
+        const GRAY = '#A9A9A9';
+        const BLUE = '#87CEEB';
+        const GREEN = '#98FF98';
+        const PURPLE = '#DDA0DD';
+        let startTime = Date.now();
+        function interpolateColor(start, end, progress) {
+            const startRGB = parseInt(start.slice(1), 16);
+            const endRGB = parseInt(end.slice(1), 16);
+            const r1 = (startRGB >> 16) & 255;
+            const g1 = (startRGB >> 8) & 255;
+            const b1 = startRGB & 255;
+            const r2 = (endRGB >> 16) & 255;
+            const g2 = (endRGB >> 8) & 255;
+            const b2 = endRGB & 255;
+            const r = Math.round(r1 + (r2 - r1) * progress);
+            const g = Math.round(g1 + (g2 - g1) * progress);
+            const b = Math.round(b1 + (b2 - b1) * progress);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        function update() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed >= TOTAL_TIME) return;
+            const cycleProgress = elapsed % CYCLE_TIME;
+            let size, color;
+            if (cycleProgress < INHALE_TIME) {
+                const progress = cycleProgress / INHALE_TIME;
+                size = MIN_SIZE + (MAX_SIZE - MIN_SIZE) * progress;
+                color = interpolateColor(GRAY, BLUE, progress);
+            } else if (cycleProgress < INHALE_TIME + HOLD_TIME) {
+                const progress = (cycleProgress - INHALE_TIME) / HOLD_TIME;
+                size = MAX_SIZE;
+                color = interpolateColor(BLUE, GREEN, progress);
+            } else {
+                const progress = (cycleProgress - INHALE_TIME - HOLD_TIME) / EXHALE_TIME;
+                size = MAX_SIZE - (MAX_SIZE - MIN_SIZE) * progress;
+                color = interpolateColor(GREEN, PURPLE, progress);
+            }
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.backgroundColor = color;
+            bubble.style.left = `${(window.innerWidth - size) / 2}px`;
+            bubble.style.top = `${(window.innerHeight - size) / 2}px`;
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = Math.floor(elapsed % 60);
+            timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} / 05:00`;
+            requestAnimationFrame(update);
+        }
+        update();
+    </script>
+</body>
+</html>
