@@ -81,11 +81,11 @@
     <div id="bubble"></div>
     <div id="timer">00:00 / 05:00</div>
     <div id="controls">
-        <button id="start" disabled>Start</button> <!-- Disabled until audio loads -->
+        <button id="start" disabled>Start</button>
         <button id="pause">Pause</button>
         <button id="restart">Restart</button>
     </div>
-    <audio id="backgroundMusic" preload="auto" loop>
+    <audio id="backgroundMusic" preload="metadata" loop>
         <source src="weightless.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
@@ -120,16 +120,27 @@
         let isPaused = false;
         let animationFrameId = null;
 
-        // Preload audio and enable Start button when ready
+        // Debug audio loading
+        console.log("Audio element initialized, src:", audio.src);
+        audio.addEventListener('loadedmetadata', () => {
+            console.log("Metadata loaded - duration:", audio.duration);
+            loading.style.display = 'none'; // Hide spinner earlier
+            startButton.disabled = false;
+        });
+        audio.addEventListener('canplay', () => {
+            console.log("Can play - buffered:", audio.buffered.length > 0 ? audio.buffered.end(0) : 0);
+        });
         audio.addEventListener('canplaythrough', () => {
-            loading.style.display = 'none';
-            startButton.disabled = false; // Enable Start button
+            console.log("Can play through - fully buffered");
+        });
+        audio.addEventListener('progress', () => {
+            console.log("Loading progress:", audio.buffered.length > 0 ? audio.buffered.end(0) : 0, "of", audio.duration);
         });
         audio.addEventListener('error', (e) => {
-            console.log("Audio load error:", e);
+            console.error("Audio load error:", e);
             loading.style.display = 'none';
-            startButton.disabled = false; // Enable anyway to allow interaction
-            alert("Failed to load Weightless. Check the file or path.");
+            startButton.disabled = false;
+            alert("Failed to load Weightless. Check the file or connection.");
         });
 
         function interpolateColor(start, end, progress) {
@@ -193,6 +204,7 @@
             isRunning = true;
             isPaused = false;
             pauseButton.textContent = 'Pause';
+            loading.style.display = 'none'; // Ensure spinner hides on Start
             audio.play().catch(error => console.log("Audio play error:", error));
             animationFrameId = requestAnimationFrame(update);
         }
@@ -218,7 +230,7 @@
             elapsed = 0;
             startTime = null;
             bubble.style.width = `${MIN_SIZE}px`;
-            bubble.style.height = `${size}px`;
+            bubble.style.height = `${MIN_SIZE}px`;
             bubble.style.backgroundColor = GRAY;
             bubble.style.left = `${(window.innerWidth - MIN_SIZE) / 2}px`;
             bubble.style.top = `${(window.innerHeight - MIN_SIZE) / 2 - 100}px`;
