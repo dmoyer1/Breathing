@@ -119,12 +119,12 @@
         let isRunning = false;
         let isPaused = false;
         let animationFrameId = null;
+        let pauseStart = null; // Time when pause began
+        let totalPausedTime = 0; // Total time spent paused
 
-        // Debug audio loading
-        console.log("Audio element initialized, src:", audio.src);
         audio.addEventListener('loadedmetadata', () => {
             console.log("Metadata loaded - duration:", audio.duration);
-            loading.style.display = 'none'; // Hide spinner earlier
+            loading.style.display = 'none';
             startButton.disabled = false;
         });
         audio.addEventListener('canplay', () => {
@@ -162,7 +162,7 @@
             if (!isRunning || isPaused) return;
 
             const now = Date.now();
-            elapsed = (now - startTime) / 1000;
+            elapsed = (now - startTime - totalPausedTime) / 1000; // Adjust for paused time
             if (elapsed >= TOTAL_TIME) {
                 restartAnimation();
                 return;
@@ -204,7 +204,7 @@
             isRunning = true;
             isPaused = false;
             pauseButton.textContent = 'Pause';
-            loading.style.display = 'none'; // Ensure spinner hides on Start
+            loading.style.display = 'none';
             audio.play().catch(error => console.log("Audio play error:", error));
             animationFrameId = requestAnimationFrame(update);
         }
@@ -213,12 +213,15 @@
             if (!isRunning) return;
             isPaused = !isPaused;
             pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
-            if (!isPaused) {
-                audio.play();
-                animationFrameId = requestAnimationFrame(update);
-            } else {
+            if (isPaused) {
+                pauseStart = Date.now(); // Mark when pause starts
                 audio.pause();
                 cancelAnimationFrame(animationFrameId);
+            } else {
+                totalPausedTime += Date.now() - pauseStart; // Add paused duration
+                pauseStart = null;
+                audio.play();
+                animationFrameId = requestAnimationFrame(update);
             }
         }
 
@@ -229,6 +232,8 @@
             cancelAnimationFrame(animationFrameId);
             elapsed = 0;
             startTime = null;
+            totalPausedTime = 0; // Reset paused time
+            pauseStart = null;
             bubble.style.width = `${MIN_SIZE}px`;
             bubble.style.height = `${MIN_SIZE}px`;
             bubble.style.backgroundColor = GRAY;
